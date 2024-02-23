@@ -1,0 +1,31 @@
+name: Build Typst document
+on: push
+
+jobs:
+  build_typst_documents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: fontist/setup-fontist@v2
+      - run: fontist install "Noto Sans"
+      - run: fontist install "Noto Serif"
+      - uses: typst-community/setup-typst@v3
+        with:
+          cache-dependency-path: requirements.typ
+      - run: typst compile main.typ main.pdf --font-path ~/.fontist/fonts
+      - name: Upload PDF file
+        uses: actions/upload-artifact@v4
+        with:
+          name: PDF
+          path: '*.pdf'
+      - name: Get current date
+        id: date
+        run: echo "DATE=$(date +%Y-%m-%d-%H:%M)" >> $GITHUB_ENV
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: github.ref_type == 'tag'
+        with:
+          name: '${{ github.ref_name }} — ${{ env.DATE }}'
+          files: '*.pdf'
